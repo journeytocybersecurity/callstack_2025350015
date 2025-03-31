@@ -1,3 +1,4 @@
+
 /*  call_stack
 
     실제 시스템에서는 스택이 메모리에 저장되지만, 본 과제에서는 `int` 배열을 이용하여 메모리를 구현합니다.
@@ -19,6 +20,8 @@
     반환 주소값을 push할 경우                 : "Return Address"
     ========================================================================
 */
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <string.h>
 #define STACK_SIZE 50 // 최대 스택 크기
@@ -65,12 +68,12 @@ void print_stack()
         else
             printf("%d : %s", i, stack_info[i]);//return address가 나타났다!. 하지만 이 경우 call_stack을 출력하진 않으므로 call_stack[i]는 그냥 -1로 하자. 
 
-        if (i == SP)
+        if (i == SP && i == FP)//매우 중요한 과정.
+            printf("    <=== [esp],[ebp]\n");//개행
+        else if (i == SP)
             printf("    <=== [esp]\n");
         else if (i == FP)
             printf("    <=== [ebp]\n");
-        else if (i == SP && i == FP)//매우 중요한 과정.
-            printf("    <=== [esp],[ebp]");
         else
             printf("\n");
     }
@@ -79,8 +82,8 @@ void print_stack()
 /*push와 pop은 LIFO 구조에 따라 맨 위의 것에 대해서만 하면 되니 그냥 SP를 기준으로 하면 된다!*/
 void push(int element, char* info)//*info 변수에 문자열을 할당하자!(배열에 문자열을 쉽게 넣으려면 포인터 말고는 방법 없다)
 {
-    call_stack[SP] = element;
-    stack_info[SP][20] = info;//info가 가리키는 문자열을 복사하여 stack_info 로
+    call_stack[SP+1] = element;//한 칸을 확보 후 집어넣는다?!
+    strcpy(stack_info[SP+1], info);//info가 가리키는 문자열을 복사하여 stack_info 로
     SP++;
 }//최대 20칸 할당되며, info에 문자열을 넣으면(20자를 넘어가지 않는다는 전제하에) 바로 배열의 특정 행을 초기화 가능!
 //stack_info는 포인터 배열이 아니니, *stack_info[SP][20]도 말이안된다. stcrpy 만이 답인가? 
@@ -102,8 +105,10 @@ void func1(int arg1, int arg2, int arg3)
     push(arg2, second);
     push(arg1, first);
     push(-1, ret);//-1은 저장되나 출력되지 않는다!
-    stack_info[SP][20] = SFP);
+    strcpy(stack_info[SP+1], SFP);
+    SP++;
     FP = SP;//단순히 둘이 같다는 것이 아닌 FP가 SP의 현재값(계속 증가하고 있었음)을 가져와 대입한 것. 즉 둘의 위치는 스택 최상단이다!
+    ebp = FP;
     SP++;//넣을 변수는 하나뿐...
     push(var_1, var);
     /*func1의 스택 프레임 형성 (함수 프롤로그 + push)*/
@@ -127,11 +132,17 @@ void func2(int arg1, int arg2)
     push(arg1, first);
     push(-1, ret);
     push(ebp, SFP);
-    SP = FP;
+    FP = SP;
+    ebp = FP;
     SP++;
     push(var_2, var);
     // func2의 스택 프레임 형성 (함수 프롤로그 + push)
-
+    print_stack();
+    func3(77);
+    SP--;
+    pop(call_stack, stack_info);
+    pop(call_stack, stack_info);
+    SP--;
     // func3의 스택 프레임 제거 (함수 에필로그 + pop)
     print_stack();
 }
@@ -139,7 +150,16 @@ void func2(int arg1, int arg2)
 
 void func3(int arg1)
 {
-
+    int var_3 = 300;
+    int var_4 = 400;
+    char* first = "arg1", * SFP = "func3 SFP", * var1 = "var_3", * var2 = "var_4";
+    push(arg1, first);
+    push(-1, ret);
+    push(ebp, SFP);
+    FP = SP;
+    SP += 2;//칸 확보 후 위로 올라감. 
+    push(var_3, var1);
+    push(var_4, var2);
     // func3의 스택 프레임 형성 (함수 프롤로그 + push)
     print_stack();
 }
@@ -150,7 +170,7 @@ int main()
 {
     func1(1, 2, 3);
     SP--;//정의되지 않게 할 변수 역시 하나뿐.실행후 위치는 SFP 옆. 
-    ebp = FP;//FP의 현재 위치 기록해 ebp에 저장. 다음함수 호출에서 사용 예정.  
+    /*ebp = FP;//FP의 현재 위치 기록해 ebp에 저장. 다음함수 호출에서 사용 예정.*/  
     pop(call_stack, stack_info); FP = -1;//FP를 치워둔다. 지금 ebp는 이미 main함수로 내려갔을 것이니..
     pop(call_stack, stack_info);//실제로는 return address 역시 main 함수의 것을 저장하기 때문에, 함부로 SP를 움직여 지워서는 안 된다. 
     SP--;
