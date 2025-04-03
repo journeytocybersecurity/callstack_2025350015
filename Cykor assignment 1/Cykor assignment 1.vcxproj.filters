@@ -15,8 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="2025350015_박규민.c">
+    <ClCompile Include="callstack_2025350015_박규민.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\callstack_2025350015_박규민.pdf">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
