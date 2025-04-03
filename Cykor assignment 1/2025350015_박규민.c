@@ -123,11 +123,12 @@ void func1(int arg1, int arg2, int arg3)
     func2(11, 13);
     // func2의 스택 프레임 제거 (함수 에필로그 + pop)
     SP--;
-    ebp = call_stack[FP];//제거될 때 역시 FP를 가져가야 함. 
+    
     pop(call_stack, stack_info);
+    ebp = call_stack[FP];//제거될 때 역시 FP를 가져가야 함. 
+    FP = ebp;
     pop(call_stack, stack_info);
     SP-=2;
-    FP = ebp;
     print_stack();
 }
 
@@ -148,12 +149,15 @@ void func2(int arg1, int arg2)
     print_stack();
     func3(77);
     // func3의 스택 프레임 제거 (함수 에필로그 + pop)
-    ebp = call_stack[FP];//제거될 때 역시 FP를 가져가야 함. 
+     
     SP-=2;
+    print_stack();
+    ebp = call_stack[FP];//제거될 때 역시 FP를 가져가야 함.
     pop(call_stack, stack_info);
+    FP = ebp;
     pop(call_stack, stack_info);
     SP--;
-    FP = ebp;
+    
     
     print_stack();
 }
@@ -181,12 +185,14 @@ int main()
 {
     func1(1, 2, 3);
     // func1의 스택 프레임 제거 (함수 에필로그 + pop)
-    ebp = call_stack[FP];
+    
     SP--;
+    ebp = call_stack[FP];
     pop(call_stack, stack_info);
+    FP = ebp;
     pop(call_stack, stack_info);
     SP-=3;//arg들 제거.원소가 아무것도 없을 때 SP가 -1이 되니까...!
-    FP = ebp;
+    
     print_stack();
     return 0;
 }
