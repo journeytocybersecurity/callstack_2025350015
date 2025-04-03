@@ -28,7 +28,7 @@
 
 int     call_stack[STACK_SIZE];         // Call Stack을 저장하는 int 배열(stack_size 개까지의 행만 들어갈수있다)
 char    stack_info[STACK_SIZE][20];     // Call Stack 요소에 대한 설명을 저장하는 문자열 배열(끝에 null문자 들어감)(다차원 포인터 배열: stack_size는 행, 20은 열)
-
+/*stack_info는 문자열 배열이다. 즉 할당할 때 일반화가 쉽지 않다. */
 /*  SP (Stack Pointer), FP (Frame Pointer)
 
     SP는 현재 스택의 최상단 인덱스를 가리킵니다.
@@ -38,7 +38,7 @@ char    stack_info[STACK_SIZE][20];     // Call Stack 요소에 대한 설명을
     실행 중인 함수 스택 프레임의 sfp를 가리킵니다.
 */
 int SP = -1;
-int FP = -1;//전역변수!
+int FP = -1;
 /*return address에 대한 포인터 변수는 계속 쓰일 것이니 전역변수로 만들자!*/
 char *ret = "Return Address";
 int ebp;//ebp의 위치에 관한것도 마찬가지. 
@@ -58,17 +58,17 @@ void print_stack()
         return;
     }
 
-    printf("====== Current Call Stack ======\n");//이런 함수는 어떻게 정의하는거야? 
+    printf("====== Current Call Stack ======\n");
 
     for (int i = SP; i >= 0; i--)//즉 현재 스택 최상단의 위치에서 한 칸씩 내려와 0에 이르겠다는 것!
     {
-        if (call_stack[i] != -1)//Return addres나 func1 SFP 가 아니면 이렇게 하겠다!
-            printf("%d : %s = %d", i, stack_info[i], call_stack[i]);/*개행문자가 없으니 뒤에 바로 [esp]가 나올수있다! 여기서 문자열 출력하는 %s는 stack_info를 받는다..*/
-        /*stack_info는 문자열 배열이다. 즉 할당할 때 일반화가 쉽지 않다. */
+        if (call_stack[i] != -1)
+            printf("%d : %s = %d", i, stack_info[i], call_stack[i]);/*여기서 문자열 출력하는% s는 stack_info를 받는다..*/
+        
         else
-            printf("%d : %s", i, stack_info[i]);//return address가 나타났다!. 하지만 이 경우 call_stack을 출력하진 않으므로 call_stack[i]는 그냥 -1로 하자. 
+            printf("%d : %s", i, stack_info[i]);//return address에서 call_stack은 -1로. 
 
-        if (i == SP && i == FP)//매우 중요한 과정.
+        if (i == SP && i == FP)
             printf("    <=== [esp],[ebp]\n");//개행
         else if (i == SP)
             printf("    <=== [esp]\n");
@@ -86,12 +86,10 @@ void push(int element, char *info)//*info 변수에 문자열을 할당하자!(�
     strcpy(stack_info[SP+1], info);//info가 가리키는 문자열을 복사하여 stack_info 로
     SP++;
 }//최대 20칸 할당되며, info에 문자열을 넣으면(20자를 넘어가지 않는다는 전제하에) 바로 배열의 특정 행을 초기화 가능!
-//stack_info는 포인터 배열이 아니니, *stack_info[SP][20]도 말이안된다. stcrpy 만이 답인가? 
-/*char이라 그냥 대놓고 문자열을 꽂을 순 없으니 포인터 변수 사용*/
-void pop(int array1[], char array2[][20])//행 전체를 제거할 것이니 array 뒤에 []가 하나만 있어도 됨. (하지만 2개 있었다면요?)
+void pop(int array1[], char array2[][20])
 {
-    array1[SP] = array1[SP + 1];//call_stack과 stack_info 에서 각각 한 행을 지워버리고 공백문자 투입. 
-    array2[SP][20] = array2[SP + 1][20];//이 배열을 사용할 때도 20까지 써줘야함
+    array1[SP] = array1[-1];
+    array2[SP][20] = array2[-1][20];
     SP--;
 }
 void push_sfp(int element, char *info1,int i)//지역변수를 push할 때 사용할 함수. //int i를 추가로 정의한 이유: SP에서 몇 칸 아래로 가야 하는가?
@@ -114,7 +112,7 @@ void func1(int arg1, int arg2, int arg3)
     push(arg1, first);
     push(-1, ret);//-1은 저장되나 출력되지 않는다!
     push(-1, SFP);//1칸 올리고, 빈 칸에 SFP Push. //-1은 기존함수 FP가 main에 있어 보이지 않음을 뜻한다. 
-    FP = SP;//단순히 둘이 같다는 것이 아닌 FP가 SP의 현재값(계속 증가하고 있었음)을 가져와 대입한 것. 즉 둘의 위치는 스택 최상단이다!
+    FP = SP;//FP가 SP의 현재값(계속 증가하고 있었음)을 가져와 대입한 것. 즉 둘의 위치는 모두 스택 최상단이다!
     ebp = FP;//현재 FP 위치는 ebp에 저장하고, 이것이 SFP다. 
     SP++;//넣을 변수는 하나뿐...
     push_sfp(var_1, var, 0);
@@ -123,9 +121,8 @@ void func1(int arg1, int arg2, int arg3)
     func2(11, 13);
     // func2의 스택 프레임 제거 (함수 에필로그 + pop)
     SP--;
-    
+    ebp = call_stack[FP];//SFP 제거되기 전 이전함수 FP를 저장해야 함. 
     pop(call_stack, stack_info);
-    ebp = call_stack[FP];//제거될 때 역시 FP를 가져가야 함. 
     FP = ebp;
     pop(call_stack, stack_info);
     SP-=2;
@@ -152,9 +149,10 @@ void func2(int arg1, int arg2)
      
     SP-=2;
     print_stack();
-    ebp = call_stack[FP];//제거될 때 역시 FP를 가져가야 함.
+    ebp = call_stack[FP];//SFP 제거되기 전 이전함수 FP 저장.
     pop(call_stack, stack_info);
     FP = ebp;
+    print_stack();
     pop(call_stack, stack_info);
     SP--;
     
